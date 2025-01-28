@@ -2,7 +2,7 @@ import pygame, math
 from sys import exit
 import random
 from random import randint
-
+#testttttttttt
  
 pygame.init()
 screen = pygame.display.set_mode((1200, 700))  # size screen
