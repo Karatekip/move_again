@@ -27,9 +27,9 @@ ski_i_surf = pygame.image.load('graphics/ski_view.jpg').convert_alpha()
 ski_i_surf = pygame.transform.scale(ski_i_surf, (1300, 758))
 ski_i_rect = ski_i_surf.get_rect(topleft=(-17, -10))
  
-labyrinth_i_surf = pygame.image.load('graphics/labyrinth_view.jpg').convert_alpha()
-labyrinth_i_surf = pygame.transform.scale(labyrinth_i_surf, (1300, 758))
-labyrinth_i_rect = labyrinth_i_surf.get_rect(topleft=(-17, -10))
+hinkel_i_surf = pygame.image.load('graphics/hinkel_view.jpg').convert_alpha()
+hinkel_i_surf = pygame.transform.scale(hinkel_i_surf, (1300, 758))
+hinkel_i_rect = hinkel_i_surf.get_rect(topleft=(-17, -10))
  
 starttrans_surf = pygame.Surface((600, 500))
 starttrans_surf.fill('pink')
@@ -44,9 +44,9 @@ ski_t_surf = font_1.render('Ski', False, (251, 72, 196))
 ski_t_surf = pygame.transform.scale(ski_t_surf, (130, 70))
 ski_t_rect = ski_t_surf.get_rect(center=(600, 350))
  
-labyrinth_t_surf = font_1.render('Labyrinth', False, (251, 72, 196))
-labyrinth_t_surf = pygame.transform.scale(labyrinth_t_surf, (250, 70))
-labyrinth_t_rect = labyrinth_t_surf.get_rect(center=(900, 350))
+hinkel_t_surf = font_1.render('hinkel', False, (251, 72, 196))
+hinkel_t_surf = pygame.transform.scale(hinkel_t_surf, (250, 70))
+hinkel_t_rect = hinkel_t_surf.get_rect(center=(900, 350))
  
 play_surf = font_1.render('Start', False, (251, 72, 196))
 play_surf = pygame.transform.scale(play_surf, (200, 70))
@@ -67,9 +67,9 @@ ski_tut_surf = font_1.render('Play ski tutorial', False, (200, 60, 170))
 ski_tut_surf = pygame.transform.scale(ski_tut_surf, (230, 60))
 ski_tut_rect = ski_tut_surf.get_rect(center=(600, 300))
 
-lab_tut_surf = font_1.render('Play labyrinth tutorial', False, (200, 60, 170))
-lab_tut_surf = pygame.transform.scale(lab_tut_surf, (230, 60))
-lab_tut_rect = lab_tut_surf.get_rect(center=(600, 500))
+hinkel_tut_surf = font_1.render('Play hinkel tutorial', False, (200, 60, 170))
+hinkel_tut_surf = pygame.transform.scale(hinkel_tut_surf, (230, 60))
+hinkel_tut_rect = hinkel_tut_surf.get_rect(center=(600, 500))
 
 
 
@@ -327,10 +327,10 @@ def ski_game():
             pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
     
     class Point(pygame.sprite.Sprite):
-        def __init__(self, point_x, point_y):
+        def __init__(self, point_x, point_y, mountain_color=(100, 100, 100)):
             super().__init__()
             self.image = pygame.Surface((4, 1000))
-            self.image.fill((100, 100, 100))
+            self.image.fill(mountain_color)
             self.rect = self.image.get_rect(topleft=(point_x, point_y))
 
         def update(self):
@@ -494,15 +494,16 @@ def ski_game():
 
             if current_time - last_point_time >= POINT_CREATION_INTERVAL:
                 if mountain_dir == 'up':
-                    point_y -= 2
                     
-                    points_group.add(Point(1200, point_y))
+                    point_y -= 2
+                    points_group.add(Point(1200, point_y, (180, 100, 100)))
                     if point_y < 570:
                         if random.random() < 0.028 or point_y < 450:
                             mountain_dir = 'down'
                 elif mountain_dir == 'down':
                     point_y += 2
-                    points_group.add(Point(1200, point_y))
+
+                    points_group.add(Point(1200, point_y, (100, 180, 100)))
                     if point_y > 600:
                         mountain_dir = 'up'
 
@@ -702,6 +703,12 @@ def ski_tutorial():
 
 def ski_tutorial():
     global game_status, ski_tut_paused
+
+    comment = "No comment"
+    com_surf = font_1.render(comment, False, (200, 60, 170))
+    com_rect = com_surf.get_rect(midtop=(600, 0))
+    show_comment = False
+
     running = True
     first_tick = pygame.time.get_ticks()
     second_tick = None
@@ -712,8 +719,11 @@ def ski_tutorial():
     wrong_release = False
     release_start = None
     total_release_duration = 0
+    
+    frames_passed = 0
 
     while running:
+        #print(f"running while loop ski tutorial for testing on 10:47 23/04/2025: {running}")
         screen.fill('green')
 
         for event in pygame.event.get():
@@ -740,25 +750,46 @@ def ski_tutorial():
         # After 1800ms: first pause
         if current_time - first_tick >= 1800 and not third_tick:
             ski_tut_paused = True
+            show_comment = True
+            comment = "Keep space pressed to continue"
+            com_surf = font_1.render(comment, False, (200, 60, 170))
+            com_rect = com_surf.get_rect(midtop=(600, 0))
+
+            
 
             if space_pressed:
                 if not second_tick_checked:
                     second_tick_checked = True
                     second_tick = current_time
                 ski_tut_paused = False
+                show_comment = False
+                comment = "No comment"
+                com_surf = font_1.render(comment, False, (200, 60, 170))
+                com_rect = com_surf.get_rect(midtop=(600, 0))
+
 
         # Continuously update second_tick if needed
         if second_tick is not None and not ski_tut_paused and not third_tick:
             adjusted_elapsed = current_time - second_tick - total_release_duration
-            if adjusted_elapsed >= 1000:
+            if adjusted_elapsed >= 1200:
                 ski_tut_paused = True
                 third_tick = current_time
+                show_comment = True
+                comment = "Release space to make the skyer fall in the downhill"
+                com_surf = font_1.render(comment, False, (200, 60, 170))
+                com_rect = com_surf.get_rect(midtop=(600, 0))
+
 
         if third_tick:
             if not space_pressed:
                 ski_tut_paused = False
+                show_comment = False
             else:
                 ski_tut_paused = True
+                comment = "Release space to make the skyer fall in the downhill"
+                com_surf = font_1.render(comment, False, (200, 60, 170))
+                com_rect = com_surf.get_rect(midtop=(600, 0))
+                show_comment = True        
 
 
 
@@ -775,19 +806,34 @@ def ski_tutorial():
             frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
             screen.blit(frame, (0, 0))
             last_frame = frame
+            frames_passed += 1
         else:
             if last_frame is not None:
                 screen.blit(last_frame, (0, 0))
 
+        # Display comment if needed
+        if show_comment:
+            screen.blit(com_surf, com_rect)
+
+        if frames_passed > 300:
+            ski_tut_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            game_status = 'menu'
+            running = False
+
+
         pygame.display.update()
         clock.tick(60)
 
-    ski_tut_cap.release()
+    
+    ski_tut_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
     game_status = 'menu'
+    running = False
+    #print(f"running: {running}")
 
 
 
-def lab_tutorial():
+
+def hinkel_tutorial():
     global game_status
     running = True
     while running:
@@ -825,8 +871,8 @@ while True:
                     start_view = 'spring_touw'
                 elif ski_t_rect.collidepoint(mouse_x, mouse_y):
                     start_view = 'ski'
-                elif labyrinth_t_rect.collidepoint(mouse_x, mouse_y):
-                    start_view = 'labyrinth'
+                elif hinkel_t_rect.collidepoint(mouse_x, mouse_y):
+                    start_view = 'hinkel'
                 elif play_rect.collidepoint(mouse_x, mouse_y):
                     game_status = 'started'
                 elif tut_rect.collidepoint(mouse_x, mouse_y):
@@ -835,8 +881,8 @@ while True:
                     game_status = 'spring_tutorial'
                 elif ski_tut_rect.collidepoint(mouse_x, mouse_y):
                     game_status = 'ski_tutorial'
-                elif lab_tut_rect.collidepoint(mouse_x, mouse_y):
-                    game_status = 'lab_tutorial'
+                elif hinkel_tut_rect.collidepoint(mouse_x, mouse_y):
+                    game_status = 'hinkel_tutorial'
 
         elif game_ready == 'ready':
             # Handle game screen logic when ready
@@ -848,8 +894,8 @@ while True:
             elif game_mode == 'ski':
                 ski_game()
                 print('playing ski')
-            elif game_mode == 'labyrinth':
-                print('playing labyrinth')
+            elif game_mode == 'hinkel':
+                print('playing hinkel')
 
     distance_x = mouse_x - screen_center[0]
     distance_y = mouse_y - screen_center[1]
@@ -868,16 +914,16 @@ while True:
         pygame.draw.rect(screen, underline_color, underline_rect)
         game_mode = 'ski'
     
-    elif start_view == 'labyrinth':
-        labyrinth_i_rect.center = (screen_center[0] + distance_x / 20, screen_center[1] + distance_y / 20)
-        screen.blit(labyrinth_i_surf, labyrinth_i_rect)
-        underline_rect = pygame.Rect(labyrinth_t_rect.left, labyrinth_t_rect.bottom - 5, labyrinth_t_rect.width, underline_thickness)
+    elif start_view == 'hinkel':
+        hinkel_i_rect.center = (screen_center[0] + distance_x / 20, screen_center[1] + distance_y / 20)
+        screen.blit(hinkel_i_surf, hinkel_i_rect)
+        underline_rect = pygame.Rect(hinkel_t_rect.left, hinkel_t_rect.bottom - 5, hinkel_t_rect.width, underline_thickness)
         pygame.draw.rect(screen, underline_color, underline_rect)
-        game_mode = 'labyrinth'
+        game_mode = 'hinkel'
     # Draw buttons and options
     screen.blit(spring_touw_t_surf, spring_touw_t_rect)
     screen.blit(ski_t_surf, ski_t_rect)
-    screen.blit(labyrinth_t_surf, labyrinth_t_rect)
+    screen.blit(hinkel_t_surf, hinkel_t_rect)
     screen.blit(play_surf, play_rect)
     screen.blit(tut_surf, tut_rect)
     # Transition effects for game start
@@ -897,14 +943,14 @@ while True:
         screen.fill('blue')
         screen.blit(spring_tut_surf, spring_tut_rect)
         screen.blit(ski_tut_surf, ski_tut_rect)
-        screen.blit(lab_tut_surf, lab_tut_rect)
+        screen.blit(hinkel_tut_surf, hinkel_tut_rect)
     
     elif game_status == 'spring_tutorial':
         spring_tutorial()
     elif game_status == 'ski_tutorial':
         ski_tutorial()
-    elif game_status == 'lab_tutorial':
-        lab_tutorial()
+    elif game_status == 'hinkel_tutorial':
+        hinkel_tutorial()
     
     
     
