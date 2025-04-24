@@ -7,18 +7,27 @@ import cv2
 
  
 pygame.init()
+pygame.mixer.init()
+
+pygame.mixer.music.load("music/Les-feuilles-mortes.ogg")
+pygame.mixer.music.play(-1)
+
 screen = pygame.display.set_mode((1200, 700))  # size screen
 pygame.display.set_caption('MBC-project')  # name screen
 clock = pygame.time.Clock()  # get time
 font_1 = pygame.font.Font(None, 50)  # Check file path for the font
 
-'''
-pygame.mixer.init()  # Initialize the mixer module
-pygame.mixer.music.load('your_music_file.mp3')  # Load your music file
-pygame.mixer.music.play(-1)  # -1 means loop indefinitely
- '''
-# starting_page
+
 # images/surfaces
+
+music1_color = (255, 255, 255)
+music1_surf = font_1.render('Les feuilles mortes', False, (music1_color))
+music1_rect = music1_surf.get_rect(midleft=(0, 670))
+music1_playing = True
+
+
+
+
 spring_touw_i_surf = pygame.image.load('graphics/spring_touw.jpg').convert_alpha()
 spring_touw_i_surf = pygame.transform.scale(spring_touw_i_surf, (1300, 758))
 spring_touw_i_rect = spring_touw_i_surf.get_rect(topleft=(-17, -10))
@@ -51,11 +60,11 @@ hinkel_t_rect = hinkel_t_surf.get_rect(center=(900, 350))
  
 play_surf = font_1.render('Start', False, (251, 72, 196))
 play_surf = pygame.transform.scale(play_surf, (200, 70))
-play_rect = play_surf.get_rect(center=(600, 600))
+play_rect = play_surf.get_rect(center=(600, 450))
 
 tut_surf = font_1.render('Tutorials', False, (200, 60, 170))
-tut_surf = pygame.transform.scale(tut_surf, (230, 60))
-tut_rect = tut_surf.get_rect(center=(600, 475))
+tut_surf = pygame.transform.scale(tut_surf, (150, 40))
+tut_rect = tut_surf.get_rect(topright=(1190, 10))
 
 
 
@@ -72,6 +81,11 @@ hinkel_tut_surf = font_1.render('Play hinkel tutorial', False, (200, 60, 170))
 hinkel_tut_surf = pygame.transform.scale(hinkel_tut_surf, (230, 60))
 hinkel_tut_rect = hinkel_tut_surf.get_rect(center=(600, 500))
 
+
+tut_back_surf = pygame.Surface(screen.get_size())
+tut_back_surf.fill('blue')
+tut_back_rect = tut_back_surf.get_rect(topleft=(0, 0))
+tut_active = False
 
 
 
@@ -1145,14 +1159,6 @@ if not cap.isOpened():
 
 
 
-#spring_tut_video = 'graphics/spring_tut_video.mp4'
-ski_tut_video = 'graphics/ski_tut_video.mp4'
-ski_tut_cap = cv2.VideoCapture(ski_tut_video)
-if not ski_tut_cap.isOpened():
-    print("Error opening ski tutorial video")
-    exit()
-
-ski_tut_paused = False
 
 
 
@@ -1211,6 +1217,20 @@ def ski_tutorial():
     ski_tut_cap.release()
     game_status = 'menu'  # Return to menu when done
 '''
+
+
+
+
+#spring_tut_video = 'graphics/spring_tut_video.mp4'
+ski_tut_video = 'graphics/ski_tut_video.mp4'
+ski_tut_cap = cv2.VideoCapture(ski_tut_video)
+if not ski_tut_cap.isOpened():
+    print("Error opening ski tutorial video")
+    exit()
+
+ski_tut_paused = False
+
+
 
 def ski_tutorial():
     global game_status, ski_tut_paused
@@ -1343,6 +1363,12 @@ def ski_tutorial():
 
 
 
+'''
+hinkel1_tut_surf = font_1.render("Hinkel Tutorial", True, (255, 255, 255))
+hinkel1_tut_rect = hinkel_tutorial_surf.get_rect(midtop=(600, 0))
+
+hinkel2_tut_surf = font_1.render("Hinkel Tutorial", True, (255, 255, 255))
+hinkel2_tut_rect = hinkel2_tut_surf.get_rect(center=(600, 350))
 
 def hinkel_tutorial():
     global game_status
@@ -1356,11 +1382,17 @@ def hinkel_tutorial():
             if event.type == pygame.MOUSEBUTTONDOWN:  # Click to exit tutorial
                 running = False
 
+
+        screen.blit(hinkel1_tut_surf, hinkel1_tut_rect)
+
         pygame.display.update()
         clock.tick(60)
 
     game_status = 'menu'  # Return to menu when done
 
+'''
+def hinkel_tutorial():
+    pass
 
 def exit_main_code():
     ski_tut_cap.release()
@@ -1384,7 +1416,7 @@ while True:
                     start_view = 'ski'
                 elif hinkel_t_rect.collidepoint(mouse_x, mouse_y):
                     start_view = 'hinkel'
-                elif play_rect.collidepoint(mouse_x, mouse_y):
+                elif play_rect.collidepoint(mouse_x, mouse_y) and not tut_active:
                     game_status = 'started'
                 elif tut_rect.collidepoint(mouse_x, mouse_y):
                     game_status = 'tutorial'
@@ -1394,6 +1426,16 @@ while True:
                     game_status = 'ski_tutorial'
                 elif hinkel_tut_rect.collidepoint(mouse_x, mouse_y):
                     game_status = 'hinkel_tutorial'
+
+
+
+                elif music1_rect.collidepoint(mouse_x, mouse_y):
+                    if music1_playing:
+                        pygame.mixer.music.pause()
+                        music1_playing = False
+                    else:
+                        pygame.mixer.music.unpause()
+                        music1_playing = True
 
     if game_ready == 'ready':
         time.sleep(0.7)
@@ -1456,19 +1498,25 @@ while True:
     # Handle tutorials
 
     if game_status == 'tutorial':
-        screen.fill('blue')
+        tut_active = True
+        screen.blit(tut_back_surf, tut_back_rect)
         screen.blit(spring_tut_surf, spring_tut_rect)
         screen.blit(ski_tut_surf, ski_tut_rect)
         screen.blit(hinkel_tut_surf, hinkel_tut_rect)
     
     elif game_status == 'spring_tutorial':
+        tut_active = True
         spring_tutorial()
     elif game_status == 'ski_tutorial':
+        tut_active = True
         ski_tutorial()
     elif game_status == 'hinkel_tutorial':
+        tut_active = True
         hinkel_tutorial()
+    else:
+        tut_active = False
     
-    
+    screen.blit(music1_surf, music1_rect)
     
     pygame.display.update()
     clock.tick(60)
