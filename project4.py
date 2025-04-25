@@ -7,7 +7,9 @@ import cv2
 import threading
 import serial
 
-ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
+#ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
+
+ser = serial.Serial('COM10', 115200, timeout=1)
 COM_EVENT = pygame.USEREVENT + 1
 
 pygame.init()
@@ -1220,7 +1222,8 @@ def spring_tutorial():
         pygame.display.update()
         clock.tick(60)
 
-    game_status = 'menu'  # Return to menu when done
+    #game_status = 'menu'  # Return to menu when done
+    pass
 
 
 '''
@@ -1276,7 +1279,7 @@ ski_tut_paused = False
 
 
 def ski_tutorial():
-    global game_status, ski_tut_paused
+    global game_status, ski_tut_paused, game_mode, start_view
 
     comment = "No comment"
     com_surf = font_1.render(comment, False, (200, 60, 170))
@@ -1400,10 +1403,15 @@ def ski_tutorial():
 
     
     ski_tut_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-    game_status = 'menu'
     #game_mode = 'ski'
     running = False
+    '''
+    game_status = 'tutorial_menu_selected'
+    game_mode = 'tutorial_menu'
+    start_view = 'tutorial_menu'
+'''
     #print(f"running: {running}")
+    pass
 
 
 
@@ -1461,6 +1469,7 @@ old_left_press, old_right_press = False, False
 
 
 tut_option = 'spring'
+back_to_menu = False
 
 # Main Game Loop
 while True:
@@ -1535,17 +1544,19 @@ while True:
                 if left_pressed == True and right_pressed == True:
                     if tut_option == 'spring':
                         spring_tutorial()
-                        game_status = None
+                        back_to_menu = True
                     elif tut_option == 'ski':
                         ski_tutorial()
-                        game_status = None
+                        back_to_menu = True
                     elif tut_option == 'hinkel':
                         hinkel_tutorial()
-                        game_status = None
+                        back_to_menu = True
             
             else:
+                back_to_menu = False
                 if left_pressed == True and right_pressed == True:
                     mouse_x, mouse_y = 600, 600
+
 
 
             old_left_press, old_right_press = left_pressed, right_pressed
@@ -1596,7 +1607,7 @@ while True:
         #time.sleep(0.7)
         # Handle game screen logic when ready
         screen.fill('pink')
-        print(game_mode)
+        #print(game_mode)
         if game_mode == 'spring_touw':
             springtouw()
             print('playing spring touw')
@@ -1664,7 +1675,7 @@ while True:
         
         
     # Handle tutorials
-
+    #print(f"game status: {game_status}")
     if game_status == 'tutorial_menu_selected':
         tut_active = True
         screen.blit(tut_back_surf, tut_back_rect)
@@ -1700,7 +1711,18 @@ while True:
     
     old_game_status = game_status
     #print(f"game status: {game_status} | old game status: {old_game_status}")
-    
+    if back_to_menu:
+        game_status = 'menu'
+        back_to_menu = False
+        game_ready = 'not_ready'
+        start_view = start_view
+        game_mode = None
+        mouse_x, mouse_y = 900, 350
+        tut_option = 'spring'
+        tut_active = False
+        left_pressed, right_pressed = False, False
+        old_left_press, old_right_press = False, False
+            
     
     pygame.display.update()
     clock.tick(60)
