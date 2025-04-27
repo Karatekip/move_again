@@ -6,22 +6,36 @@ import time
 import cv2
 import threading
 import serial
+import os
+from pygame.locals import K_ESCAPE
 
-#ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
+ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
 
+'''
 try: ser = serial.Serial('COM6', 115200, timeout=1)
 except: print("poort wordt al gebruikt")
+'''
 
 COM_EVENT = pygame.USEREVENT + 1
 
 pygame.init()
-pygame.mixer.init()
 
+pygame.mixer.init()
 pygame.mixer.music.load("music/Les-feuilles-mortes.ogg")
 pygame.mixer.music.play(-1)
+pygame.mixer.music.set_volume(1.0)
 
-#screen = pygame.display.set_mode((1200, 700))  # size screen
-screen = pygame.display.set_mode((0, 0),pygame.FULLSCREEN)  # size screen
+jump_sound = pygame.mixer.Sound('music/jump.mp3')
+game_over_sound = pygame.mixer.Sound('music/game_over.mp3')
+game_start_sound = pygame.mixer.Sound('music/game_start.mp3')
+select_sound = pygame.mixer.Sound('music/select.mp3')
+
+
+
+screen = pygame.display.set_mode((1200, 700))  # size screen
+#screen = pygame.display.set_mode((0, 0),pygame.FULLSCREEN)  # size screen
+screen_x = screen.get_width()
+screen_y = screen.get_height()
 pygame.display.set_caption('MBC-project')  # name screen
 clock = pygame.time.Clock()  # get time
 font_1 = pygame.font.Font(None, 50)  # Check file path for the font
@@ -37,7 +51,7 @@ music1_playing = True
 
 
 spring_touw_i_surf = pygame.image.load('graphics/spring_touw.jpg').convert_alpha()
-spring_touw_i_surf = pygame.transform.scale(spring_touw_i_surf, (1300, 758))
+spring_touw_i_surf = pygame.transform.scale(spring_touw_i_surf, (1300*screen_x/1200, 758*screen_y/700))
 spring_touw_i_rect = spring_touw_i_surf.get_rect(topleft=(-17, -10))
  
 ski_i_surf = pygame.image.load('graphics/ski_view.jpg').convert_alpha()
@@ -74,6 +88,10 @@ tut_surf = font_1.render('Tutorials', False, (200, 60, 170))
 tut_surf = pygame.transform.scale(tut_surf, (150, 40))
 tut_rect = tut_surf.get_rect(topright=(1190, 10))
 
+tut_back_surf = pygame.Surface(screen.get_size())
+tut_back_surf.fill('blue')
+tut_back_rect = tut_back_surf.get_rect(topleft=(0, 0))
+tut_active = False
 
 
 
@@ -90,10 +108,6 @@ hinkel_tut_surf = pygame.transform.scale(hinkel_tut_surf, (230, 60))
 hinkel_tut_rect = hinkel_tut_surf.get_rect(center=(600, 500))
 
 
-tut_back_surf = pygame.Surface(screen.get_size())
-tut_back_surf.fill('blue')
-tut_back_rect = tut_back_surf.get_rect(topleft=(0, 0))
-tut_active = False
 
 
 
@@ -140,7 +154,7 @@ def read_serial():
             if event.message.strip() == "right_button_released":
                 right_pressed = False
 
-
+            print(f"Received from COM port:{event.message.strip()}")
 
         '''
         if left_pressed == True and right_pressed == True:
@@ -161,10 +175,30 @@ def read_serial():
             #TIME.TIME() PROBLEM
             '''
             
+'''
+def escape_met_escape():
+    from pygame.locals import K_ESCAPE
+    while True:
+        for event in esc_events:
+            if event.type == pygame.KEYDOWN:
+                if event.key == K_ESCAPE:
+                    pygame.quit()
+                    print("Program aborted")
+                    exit()
+
+
+                    
+
+exit_thread = threading.Thread(target=escape_met_escape, daemon=True)
+exit_thread.start()
+    '''
 
 
 
-
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
 
 def springtouw(game_state):
     global springtouw_i_surf, springtouw_i_rect, spring_touw_t_surf, spring_touw_t_rect, starttrans_surf, starttrans_rect, screen_y, screen_x, springtouwdeel_grootte, uitrekking, springtouwdeel_grootte, springtouw_draairichting, springtouw_achter, player, grond_hoogte, moeilijkheid, moeilijkheid_text, start_delay, end_delay, startup, end_delay, game_status, score, middelste_springtouwdeel, springtouw_group, springtouw_functie, grond, begin_achtergrond, achtergrond, player_breedte, player_lengte, player_grootte, springtouw_draairichting_save, springtouwdeel_grootte, springtouw_i_rect, springtouw_i_surf, spring_touw_t_surf, spring_touw_t_rect, starttrans_surf, starttrans_rect, verander_springtouwgrootte\
@@ -246,7 +280,7 @@ def springtouw(game_state):
             groen_hoogte = 315
 
         elif difficulty ==3:
-            snelheid_touw = 0.04
+            snelheid_touw = 0.08
             tolerantie = 3
             groen_hoogte = 280
        
@@ -258,6 +292,7 @@ def springtouw(game_state):
         score.score = 0
         springtouw_draairichting = springtouw_draairichting_save
         springtouw_achter = springtouw_draairichting_save
+        game_start_sound.play()
 
     #veranderd de springtouwgrootte om een realistisch effect te geven, wordt gebruikt in "draairichting_springtouw"
     def verander_springtouwgrootte(groep,grootte):
@@ -277,15 +312,16 @@ def springtouw(game_state):
             if richting:# als het srpingtouw achter de player is wordt het kleiner
                 verander_springtouwgrootte(springtouw_group,springtouwdeel_grootte-1)
 
-            else:#als het springtouw voor de player is wordt het groter
+            else: #als het springtouw voor de player is wordt het groter
                 verander_springtouwgrootte(springtouw_group,springtouwdeel_grootte+1) 
 
-            if player.y_status == 'staan':#als de player niet heeft gesprongen verlies je
+            if player.y_status == 'staan': #als de player niet heeft gesprongen verlies je
                 end_delay = True
                 if game_status == "tutorial":
                     select_difficulty(1)
                 game_status = 'end_screen'
-            
+                game_over_sound.play()
+
         #checkt of het springtouw aan de top is aan de hand van het middelste deel
         elif middelste_springtouwdeel.rect.y <= maximum+tolerantie:
             
@@ -302,6 +338,7 @@ def springtouw(game_state):
                 if game_status == "tutorial":
                     select_difficulty(1)
                 game_status = 'end_screen'
+                game_over_sound.play()
 
     class Achtergrond:
         def __init__(self,achtergrond,x,y):
@@ -383,7 +420,8 @@ def springtouw(game_state):
     
         def springen(self,hoogte):
             self.gravity = hoogte
-        
+            jump_sound.play()
+
     class Text():
         def __init__(self, text = "text",x=screen_x/2, y=screen_y/2, kleur=(255,255,255), font=none_font):
             self.font = font
@@ -437,8 +475,8 @@ def springtouw(game_state):
 
 
 
-
-    while True:
+    spring_running = True
+    while spring_running:
         if game_status == "tutorial":
             plyr_kan_gekilled_wrdn = False
             startup = False
@@ -464,27 +502,35 @@ def springtouw(game_state):
                         select_difficulty(moeilijkheid)
                         restart_game()
                         game_status = 'playing'
+                        select_sound.play()
                 
                     if event.key == pygame.K_l:
                         if moeilijkheid == 3:
                             moeilijkheid = 1
                         else: moeilijkheid += 1
                         moeilijkheid_text.update(text = f"huidige moeilijkheid: {moeilijkheid}")
-                    
+                        select_sound.play()
+
                     if event.key == pygame.K_b:
                         game_status = 'instellingen'
                         print("instellingen")
                         
                 if event.type == COM_EVENT:
                     if event.message.strip() == "right_button_pressed":
+                        game_start_sound.play()
                         select_difficulty(moeilijkheid)
                         restart_game()
                         game_status = 'playing'
                     if event.message.strip() == "left_button_pressed":
+                        select_sound.play()
                         if moeilijkheid == 3:
                             moeilijkheid = 1
                         else: moeilijkheid += 1
                         moeilijkheid_text.update(text = f"huidige moeilijkheid: {moeilijkheid}")
+                    
+                    if event.message.strip() == "home_button_pressed":
+                        spring_running = False
+                        return
                         
                         
  #              elif event.type == COM_EVENT:
@@ -500,9 +546,13 @@ def springtouw(game_state):
                             player.springen(spronghoogte)
                             score.score += 1
                     if event.type == COM_EVENT:
-                        if event.message.strip() == "right_button_pressed" or "left_bitton_pressed":
+                        if event.message.strip() == "right_button_pressed" or "left_button_pressed":
                             player.springen(spronghoogte)
                             score.score += 1
+                        if event.message.strip() == "home_button_pressed":
+                            spring_running = False
+                            return
+
                     
             elif game_status == 'end_screen':
                 if event.type == pygame.KEYDOWN:
@@ -517,6 +567,9 @@ def springtouw(game_state):
                     if event.message.strip() == "right_button_pressed":
                         restart_game()
                         game_status = 'playing'
+                    if event.message.strip() == "home_button_pressed":
+                        spring_running = False
+                        return
         
             elif game_status == 'instellingen':
                 if event.type == pygame.KEYDOWN:
@@ -527,6 +580,9 @@ def springtouw(game_state):
                 if event.type == COM_EVENT:
                     if event.message.strip() == "right_button_pressed" and "left_button_pressed":
                         pass
+                    if event.message.strip() == "home_button_pressed":
+                        spring_running = False
+                        return
     
             elif game_status == 'tutorial':
                 if player.y_status == 'staan':
@@ -545,7 +601,10 @@ def springtouw(game_state):
                            if move_springtouw == False:
                                move_springtouw = True
                                groen_jump = True
-                               rood_jump = True                           
+                               rood_jump = True
+                        if event.message.strip() == "home_button_pressed":
+                            spring_running = False
+                            return
                         
                         
                         
@@ -693,10 +752,10 @@ def springtouw(game_state):
 
 
 
-
-
-
- 
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
 def ski_game():
     screen = pygame.display.set_mode((1200, 700))
     pygame.display.set_caption('Runner')
@@ -886,37 +945,35 @@ def ski_game():
     was_on_ground = True
     space_pressed = False
     game_state = 'playing'
-    
-    while True:
+
+
+    ski_running = True
+    while ski_running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    if not sphere.is_jumping:
-                        sphere.is_jumping = True 
-                        space_pressed = True
-                    sphere.is_space_held = True
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_SPACE:
-                    sphere.is_space_held = False
-
-                    
-
+                if event.key == K_ESCAPE:
+                    pygame.quit()
+                    print("Program aborted")
+                    exit()
 
             elif event.type == COM_EVENT:
-                print(f"Received from COM port:{event.message}")
                 if event.message.strip() == "left_button_pressed":
                     if not sphere.is_jumping:
                         sphere.is_jumping = True 
                         space_pressed = True
                     sphere.is_space_held = True
-
-                if event.message.strip() == "left_button_released":
+                    
+                elif event.message.strip() == "left_button_released":
                     sphere.is_space_held = False
 
-                
+                if event.message.strip() == "home_button_pressed":
+                        spring_running = False
+                        return
+
 
 
         current_time = pygame.time.get_ticks()
@@ -997,9 +1054,6 @@ def ski_game():
                 sphere.draw(screen)
             elif 4970 <= current_time <=5030:
                 print("GO!")
-            else:
-                print("Be ready!")
-            
 
             # Draw each snowflake
             for snowflake in snowflakes:
@@ -1032,7 +1086,10 @@ def ski_game():
         clock.tick(60)
 
 
-
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
 
 def hinkel_spel():
     global tegel_group, player, zet_tegel, tegel_move, player_op_tegel, jump, corrigeer_eerste_tegel, soort_beweging, score_indicator_speed, tegels_tussen, valsnelheid, tijd_om_te_springen, aantal_enkelvoudige_tegels_tussen, score, combo, afwijkingtegelplayer_corrigeren
@@ -1304,9 +1361,19 @@ def hinkel_spel():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == K_ESCAPE:
+                    pygame.quit()
+                    print("Program aborted")
+                    exit()
+
             if event.type == COM_EVENT:
                 #score_text.secret_button()
                 player.springen()
+                if event.message.strip() == "home_button_pressed":
+                        spring_running = False
+                        return
 
         player.vallen()
             
@@ -1339,114 +1406,10 @@ def hinkel_spel():
  
  
 
-
-
-
-
-
-
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-ski_tut_video = 'graphics/ski_tut_video.mp4'
-cap = cv2.VideoCapture(ski_tut_video)
-
-if not cap.isOpened():
-    print("Error opening ski tutorial video")
-    sys.exit()
-    
-     '''
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def spring_tutorial():
-    global game_status
-    running = True
-    while running:
-        screen.fill('red')
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:  # to quit
-                exit_main_code
-            if event.type == pygame.MOUSEBUTTONDOWN:  # Click to exit tutorial
-                running = False
-        
-        springtouw("tutorial")
-
-        pygame.display.update()
-        clock.tick(60)
-
-    #game_status = 'menu'  # Return to menu when done
-    pass
-
-
-'''
-def ski_tutorial():
-    global game_status, ski_tut_paused
-    running = True
-    while running:
-        screen.fill('green')
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:  # to quit
-                exit_main_code()
-            elif event.type == pygame.KEYDOWN:  # Click to exit tutorial
-                if event.key == pygame.K_SPACE:
-                    ski_tut_paused = not ski_tut_paused
-
-        if not ski_tut_paused:
-            ret, frame = ski_tut_cap.read()
-            if not ret:
-                break
-
-            frame = cv2.resize(frame, (1200, 700))
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
-            screen.blit(frame, (0, 0))
-            last_frame = frame
-        else:
-            if last_frame is not None:
-                screen.blit(last_frame, (0, 0))
-
-
-            
-
-        pygame.display.update()
-        clock.tick(60)
-
-    ski_tut_cap.release()
-    game_status = 'menu'  # Return to menu when done
-'''
-
-
-
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
 
 #spring_tut_video = 'graphics/spring_tut_video.mp4'
 ski_tut_video = 'graphics/ski_tut_video.mp4'
@@ -1485,8 +1448,40 @@ def ski_tutorial():
         screen.fill('green')
 
         for event in pygame.event.get():
+            
+            
+            if event.type == pygame.KEYDOWN:
+                if event.key == K_ESCAPE:
+                    pygame.quit()
+                    print("Program aborted")
+                    exit()
             if event.type == pygame.QUIT:
                 exit_main_code()
+            
+            elif event.type == COM_EVENT:
+                if event.message.strip() == "home_button_pressed":
+                    game_ready == 'not_ready'
+                    ski_tut_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    #game_mode = 'ski'
+                    running = False
+                    
+                    
+                if event.message.strip() == "left_button_pressed":
+                    space_pressed = True
+                    # If space is pressed again after wrong release, measure release duration
+                    if wrong_release:
+                        wrong_release = False
+                        release_end = pygame.time.get_ticks()
+                        total_release_duration += release_end - release_start
+                # No need to reset second_tick here — handled below
+                
+                elif event.message.strip() == "left_button_released":
+                    space_pressed = False
+                    if second_tick:  # Only start tracking wrong release *after* second_tick is active
+                        wrong_release = True
+                        release_start = pygame.time.get_ticks()
+            
+            '''
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     space_pressed = True
@@ -1501,12 +1496,12 @@ def ski_tutorial():
                     space_pressed = False
                     if second_tick:  # Only start tracking wrong release *after* second_tick is active
                         wrong_release = True
-                        release_start = pygame.time.get_ticks()
+                        release_start = pygame.time.get_ticks()'''
 
         current_time = pygame.time.get_ticks()
 
-        # After 1800ms: first pause
-        if current_time - first_tick >= 1800 and not third_tick:
+        # After 2600ms (2800ms if full screen): first pause
+        if current_time - first_tick >= 2060 and not third_tick:
             ski_tut_paused = True
             show_comment = True
             comment = "Keep space pressed to continue"
@@ -1526,10 +1521,10 @@ def ski_tutorial():
                 com_rect = com_surf.get_rect(midtop=(600, 0))
 
 
-        # Continuously update second_tick if needed
+        # Continuously hold for 1900ms (2000ms if full screen)
         if second_tick is not None and not ski_tut_paused and not third_tick:
             adjusted_elapsed = current_time - second_tick - total_release_duration
-            if adjusted_elapsed >= 1200:
+            if adjusted_elapsed >= 1900:
                 ski_tut_paused = True
                 third_tick = current_time
                 show_comment = True
@@ -1595,6 +1590,11 @@ def ski_tutorial():
     pass
 
 
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+
 
 '''
 hinkel1_tut_surf = font_1.render("Hinkel Tutorial", True, (255, 255, 255))
@@ -1627,11 +1627,34 @@ def hinkel_tutorial():
 def hinkel_tutorial():
     pass
 
+
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+
+
+
 def exit_main_code():
     ski_tut_cap.release()
     pygame.quit()
     exit()
 
+def back_to_menu_fnct():
+    global game_status, back_to_menu, game_ready, start_view, game_mode, mouse_x, mouse_y, tut_option, tut_active, left_pressed, right_pressed, old_left_press, old_right_press, screen
+    screen.fill((50, 20, 20))
+    game_status = 'menu'
+    back_to_menu = False
+    game_ready = 'not_ready'
+    start_view = start_view
+    game_mode = None
+    mouse_x, mouse_y = 900, 350
+    tut_option = 'spring'
+    tut_active = False
+    left_pressed, right_pressed = False, False
+    old_left_press, old_right_press = False, False
+    screen = pygame.display.set_mode((1200, 700))
+    pygame.mixer.music.set_volume(1.0)
 
 
 
@@ -1639,6 +1662,10 @@ def exit_main_code():
 
 game_mode = None
 mouse_x, mouse_y = 900, 350
+
+current_volume = 1.0  # Start volume
+target_volume = 1.0   # Target volume we want to reach
+fade_speed = 0.01     # Speed of fading
 
 
 # Run serial reading in a separate thread
@@ -1655,11 +1682,17 @@ back_to_menu = False
 # Main Game Loop
 while True:
     for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+                if event.key == K_ESCAPE:
+                    pygame.quit()
+                    print("Program aborted")
+                    exit()
+                    
         if event.type == pygame.QUIT:  # Quit event
             exit_main_code()
             
         elif event.type == COM_EVENT:
-            print(f"Received from COM port:{event.message}")
+            #print(f"Received from COM port:{event.message}")
             if event.message.strip() == "left_button_pressed":
                 left_pressed = True
 
@@ -1671,6 +1704,11 @@ while True:
 
             if event.message.strip() == "right_button_released":
                 right_pressed = False
+            
+                
+            
+            
+            
                 
                 
             if left_pressed == False and right_pressed == False:
@@ -1723,9 +1761,11 @@ while True:
 
             if game_status == 'tutorial_menu_selected':
                 if left_pressed == True and right_pressed == True:
+                    pygame.mixer.music.set_volume(1.0)
                     if tut_option == 'spring':
-                        spring_tutorial()
-                        back_to_menu = True
+                        springtouw("tutorial")
+                        back_to_menu_fnct()
+
                     elif tut_option == 'ski':
                         ski_tutorial()
                         back_to_menu = True
@@ -1745,19 +1785,19 @@ while True:
         # Handle start page (before game starts)
         if game_ready == 'not_ready':
             if (mouse_x, mouse_y) == (260, 350):
-                print('springtouw selected')
+                #print('springtouw selected')
                 start_view = 'spring_touw'
             elif (mouse_x, mouse_y) == (600, 350):
                 start_view = 'ski'
-                print('ski selected')
+                #print('ski selected')
             elif (mouse_x, mouse_y) == (900, 350):
                 start_view = 'hinkel'
-                print('hinkel selected')
+                #print('hinkel selected')
             elif (mouse_x, mouse_y) == (600, 600):
                 game_status = 'started'
             elif (mouse_x, mouse_y) == (1180, 11):
                 start_view = 'tutorial_menu'
-                print('tut selected')
+                #print('tut selected')
                 
             if game_mode == 'tutorial_menu':
                 if (mouse_x, mouse_y) == (600, 100):
@@ -1785,19 +1825,23 @@ while True:
 
 
     if game_ready == 'ready':
+        pygame.mixer.music.set_volume(0.3)
         #time.sleep(0.7)
         # Handle game screen logic when ready
         screen.fill('pink')
         #print(game_mode)
         if game_mode == 'spring_touw':
-            springtouw("starting_screen")
             print('playing spring touw')
+            springtouw("starting_screen")
+            back_to_menu_fnct()
         elif game_mode == 'ski':
-            ski_game()
             print('playing ski')
+            ski_game()
+            back_to_menu_fnct()
         elif game_mode == 'hinkel':
-            hinkel_spel()
             print('playing hinkel')
+            hinkel_spel()
+            back_to_menu_fnct()
         elif game_mode == 'tutorial_menu':
             game_status = 'tutorial_menu_selected'
     
@@ -1806,6 +1850,7 @@ while True:
     distance_y = mouse_y - screen_center[1]
     # Update background images and game view
     if start_view == 'spring_touw':
+        screen.fill((50, 20, 20))
         spring_touw_i_rect.center = (screen_center[0] + distance_x / 20, screen_center[1] + distance_y / 20)
         screen.blit(spring_touw_i_surf, spring_touw_i_rect)
         underline_rect = pygame.Rect(spring_touw_t_rect.left, spring_touw_t_rect.bottom - 5, spring_touw_t_rect.width, underline_thickness)
@@ -1813,6 +1858,7 @@ while True:
         game_mode = 'spring_touw'
     
     elif start_view == 'ski':
+        screen.fill((50, 20, 20))
         ski_i_rect.center = (screen_center[0] + distance_x / 20, screen_center[1] + distance_y / 20)
         screen.blit(ski_i_surf, ski_i_rect)
         underline_rect = pygame.Rect(ski_t_rect.left, ski_t_rect.bottom - 5, ski_t_rect.width, underline_thickness)
@@ -1820,6 +1866,7 @@ while True:
         game_mode = 'ski'
     
     elif start_view == 'hinkel':
+        screen.fill((50, 20, 20))
         hinkel_i_rect.center = (screen_center[0] + distance_x / 20, screen_center[1] + distance_y / 20)
         screen.blit(hinkel_i_surf, hinkel_i_rect)
         underline_rect = pygame.Rect(hinkel_t_rect.left, hinkel_t_rect.bottom - 5, hinkel_t_rect.width, underline_thickness)
@@ -1828,6 +1875,8 @@ while True:
     
     elif start_view == 'tutorial_menu':
         screen.fill((50, 20, 20))
+        underline_rect = pygame.Rect(tut_rect.left, tut_rect.bottom - 5, tut_rect.width, underline_thickness)
+        pygame.draw.rect(screen, underline_color, underline_rect)
         game_mode = "tutorial_menu"
     
     # Draw buttons and options
@@ -1836,22 +1885,23 @@ while True:
     screen.blit(hinkel_t_surf, hinkel_t_rect)
     screen.blit(play_surf, play_rect)
     screen.blit(tut_surf, tut_rect)
-    
+
     screen.blit(music1_surf, music1_rect)
 
     # Transition effects for game start
-    if game_status == 'started':
+    if game_status == 'started' and start_view != 'tutorial_menu':
+        game_ready = 'ready'
         rect_width += growth_rate
         rect_height += growth_rate
-        if rect_width >= screen.get_width():
-            game_ready = 'ready'
-        elif rect_height >= screen.get_height():
+        if not rect_width >= screen.get_width():
             rect_height = screen.get_height()
         starttrans_surf = pygame.Surface((rect_width, rect_height))
         starttrans_surf.fill('pink')
         starttrans_rect = starttrans_surf.get_rect(center=screen_center)
         screen.blit(starttrans_surf, starttrans_rect)
         screen.blit(spel_opstart_surf, spel_opstart_rect)
+    elif game_status == 'started' and start_view == 'tutorial_menu':
+        game_ready = 'ready'
     
         
         
@@ -1893,17 +1943,7 @@ while True:
     old_game_status = game_status
     #print(f"game status: {game_status} | old game status: {old_game_status}")
     if back_to_menu:
-        game_status = 'menu'
-        back_to_menu = False
-        game_ready = 'not_ready'
-        start_view = start_view
-        game_mode = None
-        mouse_x, mouse_y = 900, 350
-        tut_option = 'spring'
-        tut_active = False
-        left_pressed, right_pressed = False, False
-        old_left_press, old_right_press = False, False
-            
-    
+        back_to_menu_fnct()
+
     pygame.display.update()
     clock.tick(60)
