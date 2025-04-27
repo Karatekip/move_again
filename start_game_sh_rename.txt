@@ -1,0 +1,14 @@
+#!/bin/bash
+
+sleep 10
+
+export DISPLAY=:0
+
+export XDG_RUNTIME_DIR=/run/user/1000
+
+cd /home/pi/Desktop/move_again
+
+source /home/pi/Desktop/move_again/venv/bin/activate
+
+python project5.py
+
