@@ -8,15 +8,15 @@ import threading
 import serial
 import os
 from pygame.locals import K_ESCAPE
-
+'''
 ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
+'''
 
-'''
-try: ser = serial.Serial('COM6', 115200, timeout=1)
+try: ser = serial.Serial('COM10', 115200, timeout=1)
 except: print("poort wordt al gebruikt")
-'''
 
 COM_EVENT = pygame.USEREVENT + 1
+
 
 pygame.init()
 
@@ -94,15 +94,15 @@ tut_active = False
 
 
 
-spring_tut_surf = font_1.render('Play springtouw turorial', False, (200, 60, 170))
+spring_tut_surf = font_1.render('Speel springtouw turorial', False, (200, 60, 170))
 spring_tut_surf = pygame.transform.scale(spring_tut_surf, (230, 60))
 spring_tut_rect = spring_tut_surf.get_rect(center=(600, 100))
 
-ski_tut_surf = font_1.render('Play ski tutorial', False, (200, 60, 170))
+ski_tut_surf = font_1.render('Speel ski tutorial', False, (200, 60, 170))
 ski_tut_surf = pygame.transform.scale(ski_tut_surf, (230, 60))
 ski_tut_rect = ski_tut_surf.get_rect(center=(600, 300))
 
-hinkel_tut_surf = font_1.render('Play hinkel tutorial', False, (200, 60, 170))
+hinkel_tut_surf = font_1.render('Speel hinkel tutorial', False, (200, 60, 170))
 hinkel_tut_surf = pygame.transform.scale(hinkel_tut_surf, (230, 60))
 hinkel_tut_rect = hinkel_tut_surf.get_rect(center=(600, 500))
 
@@ -1098,9 +1098,14 @@ def ski_game():
 #---------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------
 
-def hinkel_spel():
-    global tegel_group, player, zet_tegel, tegel_move, player_op_tegel, jump, corrigeer_eerste_tegel, soort_beweging, score_indicator_speed, tegels_tussen, valsnelheid, tijd_om_te_springen, aantal_enkelvoudige_tegels_tussen, score, combo, afwijkingtegelplayer_corrigeren
-    print('playing hinkel')
+def hinkel_spel(game_state_bis = "starting_screen"):
+    global screen_x,screen_y,tegelgrootte,begin_tegelsnelheid,zwaartekracht,spronggrootte,tijd_om_te_springen,aantal_enkelvoudige_tegels_tussen,tegel_move_aftegel,player_bij_start,eerste_sprong,parcour_vermeerdering,score_vermeerderd,move_score,aantal_keren_bij_start,verleng_parcour
+    global valsnelheid, tegels_tussen,score,score_indicator_speed,score_indicator_vermeerdering,combo,zet_tegel,tegel_move,player_op_tegel,jump,corrigeer_eerste_tegel,soort_beweging,aantal_tegels_gemaakt,parcour_lengte,gamemode,reverse,tegel_move_aftegel,player_bij_start,eerste_sprong,laatste_tegel_versnelling
+    global tegel_group,screen,player,begintegel,score_balk_group,score_balk_yellow,score_balk_red,score_balk_green,score_indicator,score_text,heart_group,heart1,heart2,heart3,text_group,tut_text1,tut_text2,tut_text3,tut_text4,tut_text5,tut_text6,tut_text7
+    global begin_text,eind_text,none_font,clock,screen_x,screen_y,tegelgrootte,begin_tegelsnelheid,zwaartekracht,spronggrootte,tijd_om_te_springen,aantal_enkelvoudige_tegels_tussen,valsnelheid,parcour_vermeerdering,score_vermeerderd,move_score,aantal_keren_bij_start,verleng_parcour
+    global afwijkingtegelplayer_corrigeren,draw_object,nieuwe_tegel_als_allen_dood_zijn,momentele_tegel,reset_game,player_op_tegel,tegel_move_aftegel,player_bij_start,eerste_sprong,laatste_tegel_versnelling
+    global gamemode,begin_tegelsnelheid,valsnelheid,zwaartekracht,spronggrootte,tijd_om_te_springen,aantal_enkelvoudige_tegels_tussen,parcour_vermeerdering,score_vermeerderd,move_score,aantal_keren_bij_start,verleng_parcour, Heart, Tegel, Player, Score, Score_balk, Score_indicator, Text
+    global aantal_keren_bij_start, forceer_1_actie_var, parcour_vermeerdering, verleng_parcour, move_score, game_state
     #variabelen
     screen_x = 500
     screen_y = 700
@@ -1112,9 +1117,10 @@ def hinkel_spel():
     tijd_om_te_springen = 0
     aantal_enkelvoudige_tegels_tussen = 2
     #afblijven!!!, wordt gebruik voor berekeningen
-    tegels_tussen = 1 
+    tegels_tussen = 1
     score = 0
-    score_indicator_speed = 6
+    score_indicator_speed = 2
+    score_indicator_vermeerdering = 0.5
     combo = 0
 
     zet_tegel = True
@@ -1123,16 +1129,69 @@ def hinkel_spel():
     jump = True
     corrigeer_eerste_tegel = True
     soort_beweging = "normaal"
+    aantal_tegels_gemaakt = 0
+    parcour_lengte = 4
+    gamemode = 2
+    reverse = False
+    tegel_move_aftegel = True
+    player_bij_start = False
+    eerste_sprong = False
+    parcour_vermeerdering = 1
+    score_vermeerderd = True
+    laatste_tegel_versnelling = False
+    game_state = game_state_bis #starting_screen, playing, end_screen, tutorial
+
+    #tutorial stuff
+    move_score = False
+    aantal_keren_bij_start = 0
+    verleng_parcour = True
+    if game_state == "tutorial":
+        parcour_vermeerdering = 0
+    tut_fase = 1
+    forceer_1_actie_var = True
 
 
 
     #initieer pygame
+    pygame.init()
     screen = pygame.display.set_mode((0,0),pygame.FULLSCREEN)
-    screen_x = screen.get_width()
-    screen_y = screen.get_height()
+    #screen = pygame.display.set_mode((400,650))
+    screen_x =screen.get_width()
+    screen_y =screen.get_height()
     pygame.display.set_caption('hinkelen')
     clock = pygame.time.Clock()
     none_font = pygame.font.Font(None,int(70))
+
+    def reset_game():
+        global tegels_tussen,score, score_indicator_speed,score_indicator_vermeerdering,combo,zet_tegel,tegel_move,player_op_tegel,jump,corrigeer_eerste_tegel,soort_beweging,aantal_tegels_gemaakt,parcour_lengte,reverse,tegel_move_aftegel,player_bij_start,eerste_sprong,score_vermeerderd,game_state,heart_group,heart1,heart2,heart3,tegel_group, laatste_tegel_versnelling
+        global Heart, gamemode, begin_tegelsnelheid,valsnelheid,zwaartekracht,spronggrootte,tijd_om_te_springen,aantal_enkelvoudige_tegels_tussen,parcour_vermeerdering
+        tegels_tussen = 1
+        score_indicator_speed = 1
+        score_indicator_vermeerdering = 0.5
+        combo = 0
+
+        tegel_move = False
+        player_op_tegel = False
+        jump = True
+        corrigeer_eerste_tegel = True
+        soort_beweging = "normaal"
+        aantal_tegels_gemaakt = 0
+        parcour_lengte = 4
+        reverse = False
+        tegel_move_aftegel = True
+        player_bij_start = False
+        eerste_sprong = False
+        score_vermeerderd = True
+        laatste_tegel_versnelling = False
+        heart_group = [heart1 := Heart("graphics/pixel_heart.webp",screen_x/8,5*screen_y/8), \
+                           heart2 :=Heart("graphics/pixel_heart.webp",screen_x/8,screen_y/2), \
+                           heart3 := Heart("graphics/pixel_heart.webp",screen_x/8,6*screen_y/8)]
+        print(tegel_group)
+        for tegel in tegel_group:
+            tegel.kill()
+        print(tegel_group)
+    
+        zet_tegel = False
 
     def afwijkingtegelplayer_corrigeren(obj1,obj2):
         global tegel_group
@@ -1148,10 +1207,11 @@ def hinkel_spel():
         screen.blit(object.image,object.rect)
     
     def nieuwe_tegel_als_allen_dood_zijn():
-        global tegel_group, zet_tegel, Tegel, corrigeer_eerste_tegel, screen_x
+        global tegel_group, zet_tegel, Tegel, corrigeer_eerste_tegel, screen_x,tegels_tussen
         if len(tegel_group) == 0: #maakt nieuwer begintegel wanneer alle tegels dood zijn
             zet_tegel = True
-            tegel_group.add(Tegel(screen_x/2,0,True,"enkelvoudig"))
+            tegel_group.add(Tegel(screen_x/2,0,True,"enkelvoudig1", eerste_tegel = True))
+            tegels_tussen = 1
             corrigeer_eerste_tegel = True
 
     def momentele_tegel():
@@ -1159,7 +1219,8 @@ def hinkel_spel():
         return pygame.sprite.spritecollide(player,tegel_group,False)[0]
 
     class Tegel(pygame.sprite.Sprite):
-        def __init__(self,x,y,zet_tegel,tegel_type):
+        def __init__(self,x,y,zet_tegel,tegel_type, laatste_tegel = False,eerste_tegel = False):
+            global aantal_tegels_gemaakt
             super().__init__()
             self.image = pygame.Surface((tegelgrootte,tegelgrootte))
             self.rect = self.image.get_rect(midbottom = (x,y))
@@ -1168,6 +1229,9 @@ def hinkel_spel():
             self.werkelijke_y = self.rect.y
             self.werkelijke_x = self.rect.centerx
             self.tegel_type = tegel_type
+            aantal_tegels_gemaakt += 1
+            self.laatste_tegel = laatste_tegel
+            self.eerste_tegel = eerste_tegel
     
         def update(self):
             self.rect.y = self.werkelijke_y
@@ -1182,29 +1246,44 @@ def hinkel_spel():
                 self.werkelijke_y += snelheid
                 self.update()
                 self.generate_tegel()
-                if self.rect.top >= screen_y: #dood de tegels als ze uit het scherm gaan
-                    self.kill()
+               # if self.rect.top >= screen_y: #dood de tegels als ze uit het scherm gaan
+                #    self.kill()
     #                zet_tegel = False
-        #     else:
-            #      self.generate_tegel()
+           #     else:
+            #        self.generate_tegel()
         
         def generate_tegel(self):
-            global zet_tegel, tegels_tussen, aantal_enkelvoudige_tegels_tussen
-        
+            global zet_tegel,tegels_tussen,aantal_enkelvoudige_tegels_tussen, aantal_tegels_gemaakt,parcour_lengte,gamemode
             if zet_tegel == True and self.zet_tegel == True and self.rect.top >= 0:
                 #print(self.rect.centerx, self.werkelijke_x)
                 if tegels_tussen == aantal_enkelvoudige_tegels_tussen:
+                    if aantal_tegels_gemaakt >= parcour_lengte-2:
+                        laatste_tegel_bis = True
+                    else: 
+                        laatste_tegel_bis = False
                     tegel_group.add(Tegel(self.werkelijke_x-(tegelgrootte/2),self.rect.top,True,"dubbel1"))
-                    tegel_group.add(Tegel(self.werkelijke_x+(tegelgrootte/2),self.rect.top,False,"dubbel2"))
+                    tegel_group.add(Tegel(self.werkelijke_x+(tegelgrootte/2),self.rect.top,False,"dubbel2",laatste_tegel = laatste_tegel_bis))
                     tegels_tussen = 0
                 else:
                     tegels_tussen += 1
+                    if aantal_tegels_gemaakt >= parcour_lengte-1:
+                        laatste_tegel_bis = True
+                    else: 
+                        laatste_tegel_bis = False
                     if "enkelvoudig" in self.tegel_type:
-                        tegel_group.add(Tegel(self.werkelijke_x,self.rect.top,True,f"enkelvoudig{tegels_tussen}"))
-                    
+                        tegel_group.add(Tegel(self.werkelijke_x,self.rect.top,True,f"enkelvoudig{tegels_tussen}",laatste_tegel = laatste_tegel_bis))
+
                     if  "dubbel" in self.tegel_type:    
-                        tegel_group.add(Tegel(self.werkelijke_x + tegelgrootte/2,self.rect.top,True,f"enkelvoudig{tegels_tussen}"))
+                        tegel_group.add(Tegel(self.werkelijke_x + tegelgrootte/2,self.rect.top,True,f"enkelvoudig{tegels_tussen}",laatste_tegel = laatste_tegel_bis))
+
                 self.zet_tegel = False
+            
+                #zorgt dat de tegels opgesplitst worden in parcours
+                if aantal_tegels_gemaakt >= parcour_lengte:
+                    zet_tegel = False
+                    #TODO parcour_lengte += 10 
+                    if gamemode == 1:
+                        aantal_tegels_gemaakt = 0
     
         def change_color(self, color):
             self.image.fill(color,self.image.get_rect().inflate(-2,-2))
@@ -1215,7 +1294,7 @@ def hinkel_spel():
             super().__init__()
             self.image = pygame.Surface((40,40))
             self.rect = self.image.get_rect(center = (screen_x/2, ((screen_y/tegelgrootte)-4)*tegelgrootte + (tegelgrootte/2) ))
-            self.image.fill('Red',self.image.get_rect().inflate(-2,-2))
+            self.image.fill('Green',self.image.get_rect().inflate(-2,-2))
             self.werkelijke_image_grootte = self.image.get_width()
             self.kan_jumpen = False
             self.werkelijke_x = self.rect.centerx
@@ -1224,18 +1303,17 @@ def hinkel_spel():
             self.image = pygame.transform.scale(self.image,nieuwe_grootte)
             self.rect = self.image.get_rect(center = (self.rect.centerx, ((screen_y/tegelgrootte)-4)*tegelgrootte + (tegelgrootte/2) ))
             self.image.fill('Black')
-            self.image.fill('Red',self.image.get_rect().inflate(-2,-2))
+            self.image.fill('Green',self.image.get_rect().inflate(-2,-2))
             self.rect.centerx = self.werkelijke_x
         
         def vallen(self):
-            global valsnelheid, tijd_om_te_springen, tegel_move, spring_schuin,tegel_group, afwijkingtegelplayer_corrigeren, player_staat, soort_beweging
-            print(f"tegel_move: {tegel_move}")
+            global valsnelheid, tijd_om_te_springen, tegel_move, spring_schuin,tegel_group, afwijkingtegelplayer_corrigeren, player_staat, soort_beweging, reverse, gamemode,score_vermeerderd, laatste_tegel_versnelling
             if self.image.get_width() <= 40:
                 #self.update_grootte((40,40))
                 tijd_om_te_springen = 0
+                tegel_move = False
                 if player_op_tegel == True:
                     self.kan_jumpen = True
-                    tegel_move = False
                     #corigeer de tegels zodat ze in het midden staan wanneer de speler neer komt
                     afwijkingtegelplayer_corrigeren(momentele_tegel(), self)
             else:
@@ -1247,25 +1325,57 @@ def hinkel_spel():
                 self.update_grootte((self.werkelijke_image_grootte,self.werkelijke_image_grootte))
                 tijd_om_te_springen += 1
             
-
+            
+            #beweegt de tegels op basis van de soort beweging
             if tegel_move:
-                if soort_beweging == "dubbel_beweging1":
-                    for tegel in tegel_group:
-                        tegel.move(tegelgrootte/41, "x")
-                        tegel.move(tegelgrootte/22)
-                elif soort_beweging == "dubbel_beweging2":
-                    for tegel in tegel_group:
-                        tegel.move(-tegelgrootte/22, "x")
-                elif soort_beweging == "dubbel_beweging3":
-                    for tegel in tegel_group:
-                        tegel.move(tegelgrootte/41, "x")
-                        tegel.move(tegelgrootte/22)
-            
-                else:
-                    for tegel in tegel_group:
-                        tegel.move(tegelgrootte/22)
-            
+                if reverse == False:
+                    if soort_beweging == "dubbel_beweging1":
+                        if reverse == False:
+                            for tegel in tegel_group:
+                                tegel.move(tegelgrootte/41, "x")
+                                tegel.move(tegelgrootte/22)
+                            #print("dubbel_beweging1")
+
+                    elif soort_beweging == "dubbel_beweging2":
+                        if reverse == False:
+                            for tegel in tegel_group:
+                                tegel.move(-tegelgrootte/22, "x")
+                            #print("dubbel_beweging2")
+
+                    elif soort_beweging == "dubbel_beweging3":
+                        if reverse == False:
+                            for tegel in tegel_group:
+                                tegel.move(tegelgrootte/41, "x")
+                                tegel.move(tegelgrootte/22)
+                            #print("dubbel_beweging3")
                 
+                  #  elif len(pygame.sprite.spritecollide(player,tegel_group,False)) == 0:
+                   #     for tegel in tegel_group:
+                    #        tegel.move(tegelgrootte/22)
+                  
+                
+                    else:
+                        if reverse == False:
+                            for tegel in tegel_group:
+                                tegel.move(tegelgrootte/22)
+
+                else:
+                    if soort_beweging == "reverse_dubbel_beweging1":
+                        for tegel in tegel_group:
+                            tegel.move(-tegelgrootte/41, "x")
+                            tegel.move(-tegelgrootte/22)
+                    elif soort_beweging == "reverse_dubbel_beweging2":
+                        for tegel in tegel_group:
+                            tegel.move(tegelgrootte/22, "x")
+                    elif soort_beweging == "reverse_dubbel_beweging3":
+                        for tegel in tegel_group:
+                            tegel.move(-tegelgrootte/41, "x")
+                            tegel.move(-tegelgrootte/22)
+                    else:
+                        for tegel in tegel_group:
+                            tegel.move(-tegelgrootte/22)
+
+
             else: #maakt de tegel rood als je er op staat en de andere grijs
                 if self.kan_jumpen == True:
                     soort_beweging = "normaal"
@@ -1273,29 +1383,55 @@ def hinkel_spel():
                     if tegel.rect.colliderect(player) == False:
                         tegel.change_color("Grey")
                     else: 
-                        tegel.change_color("Red")
+                        tegel.change_color("Green")
                     
             if len(pygame.sprite.spritecollide(player,tegel_group,False)) != 0:
-                #checkt of de voorwaarde voor eerste dubbelsprong waar te maken
+                #bepaalt welke bewegingssoort het moet zijn wanneer de tegel is geland
                 if self.kan_jumpen == True:
-                    if momentele_tegel().tegel_type == f"enkelvoudig{aantal_enkelvoudige_tegels_tussen}":
-                        soort_beweging = "dubbel_beweging1"
-                    elif momentele_tegel().tegel_type == "dubbel1":
-                        soort_beweging = "dubbel_beweging2"
-                    elif momentele_tegel().tegel_type == "dubbel2":
-                        soort_beweging = "dubbel_beweging3"
+                    if momentele_tegel().laatste_tegel == True:
+                        if gamemode == 1:
+                            soort_beweging = "normaal"
+                            #print("ik doe nu een normaalbeweging")
+                        elif gamemode == 2:
+                            reverse = True
+                            if player.kan_jumpen and laatste_tegel_versnelling == False:
+                                score_vermeerderd = False
+                                laatste_tegel_versnelling = True
+                            #print("revers is nu True en ik maak er een heel lange line van")
+                    
+                    if reverse and momentele_tegel().eerste_tegel != True:
+                        if momentele_tegel().tegel_type == "enkelvoudig1":
+                            soort_beweging = "reverse_dubbel_beweging1"
+                        elif momentele_tegel().tegel_type == "dubbel2":
+                            soort_beweging = "reverse_dubbel_beweging2"
+                        elif momentele_tegel().tegel_type == "dubbel1":
+                            soort_beweging = "reverse_dubbel_beweging3"         
+                        
+                    elif reverse != True: 
+                        if momentele_tegel().tegel_type == f"enkelvoudig{aantal_enkelvoudige_tegels_tussen}":
+                            soort_beweging = "dubbel_beweging1"
+                        elif momentele_tegel().tegel_type == "dubbel1":
+                            soort_beweging = "dubbel_beweging2"
+                        elif momentele_tegel().tegel_type == "dubbel2":
+                            soort_beweging = "dubbel_beweging3"          
+                        else:
+                            soort_beweging = "normaal"
 
+                    else: soort_beweging = "reversenormaal"
+                        
 
         def springen(self):
             global valsnelheid, tegel_move, score, player_staat
-            if event.message.strip() == "left_button_pressed" and self.kan_jumpen:
-                score_indicator.check_kleur()
-                self.kan_jumpen = False
-                valsnelheid = -spronggrootte
-                self.werkelijke_image_grootte-=valsnelheid
-                self.update_grootte((self.werkelijke_image_grootte,self.werkelijke_image_grootte))
-                if player_op_tegel == True:
-                    tegel_move = True
+            if self.kan_jumpen == True:
+                if event.message.strip() == "left_button_pressed" or "right_button_pressed":
+                    jump_sound.play()
+                    score_indicator.check_kleur()
+                    self.kan_jumpen = False
+                    valsnelheid = -spronggrootte
+                    self.werkelijke_image_grootte-=valsnelheid
+                    self.update_grootte((self.werkelijke_image_grootte,self.werkelijke_image_grootte))
+                    if player_op_tegel == True:
+                        tegel_move = True
                 
     class Score:
         def __init__(self):
@@ -1303,9 +1439,11 @@ def hinkel_spel():
             self.rect = self.image.get_rect(center = (screen_x/2, 50))
         def secret_button(self):
             global score
-            if event.key == pygame.K_m:
-                score += 1
-                self.update()
+            pass
+            
+            #if event.key == pygame.K_m:
+             #   score += 1
+              #  self.update()
         def update(self):
             global score
             self.image = none_font.render(f'score: {score}',True, "White")
@@ -1323,13 +1461,20 @@ def hinkel_spel():
         def __init__(self):
             self.image = pygame.Surface((10,50))
             self.rect = self.image.get_rect(center = (screen_x/2,screen_y-50))
+        
         def move(self):
-            global score_indicator_speed
+            global score_indicator_speed, score_vermeerderd
+            if score_vermeerderd == False:
+                if score_indicator_speed >= 0:
+                    score_indicator_speed += score_indicator_vermeerdering
+                else: score_indicator_speed -= score_indicator_vermeerdering
+                score_vermeerderd = True
             if self.rect.right >= score_balk_red.rect.right or self.rect.left <= score_balk_red.rect.left:
                 score_indicator_speed = -score_indicator_speed
-            self.rect.centerx += score_indicator_speed
+            self.rect.centerx += int(score_indicator_speed)
+        
         def check_kleur(self):
-            global score
+            global score, heart_group, reset_game, game_state, text_group, move_score, aantal_keren_bij_start
             if self.rect.centerx in score_balk_green.range:
                 score += 1
                 #print("score plus 1")
@@ -1337,14 +1482,77 @@ def hinkel_spel():
                 score += 0.5
                 #print(" score plus 0.5")
             elif self.rect.centerx in score_balk_red.range:
-                score -= 1
+                #score -= 1
+                del heart_group[0]
+                if len(heart_group) == 0:
+                    game_over_sound.play()
+                    for text in text_group:
+                        text.draw = False
+                    if game_state == "tutorial":
+                        if aantal_keren_bij_start < 3:
+                            game_state = "tutorial"
+                        else: game_state = "starting_screen"
+                        tut_text1.draw = True
+                        move_score = False
+                        aantal_keren_bij_start = 0
+                    else: 
+                        game_state = "starting_screen"
+                    score = 0
+                    reset_game()
+                    score_indicator.rect.centerx = screen_x/2
+
                 #print("score min 1")
             score_text.update()
             #print(score)
             #print("---"*5)
+        
+        
+    class Heart:
+        def __init__(self, image, x, y):
+            self.image = pygame.image.load(image)
+            self.image = pygame.transform.scale(self.image,(40,40))
+            self.image.set_colorkey((255,255,255))
+            self.rect = self.image.get_rect(center = (x,y))
+        def draw(self):
+            screen.blit(self.image,self.rect)
+        
 
+    heart_group = [heart1 := Heart("graphics/pixel_heart.webp",screen_x/8,5*screen_y/8), \
+                       heart2 :=Heart("graphics/pixel_heart.webp",screen_x/8,screen_y/2), \
+                       heart3 := Heart("graphics/pixel_heart.webp",screen_x/8,6*screen_y/8)]
+    
+    
+    
+    class Text():
+        def __init__(self, text = "text",x=screen_x/2, y=screen_y/2, kleur=(255,255,255), font=none_font, draw = False):
+            self.font = font
+            self.kleur = kleur
+            self.image = self.font.render(text, True, self.kleur)
+            self.rect = self.image.get_rect(center = (x,y))
+            screen.blit(self.image,self.rect)
+            self.draw = draw
+    
+        def blit(self):
+            screen.blit(self.image,self.rect)
+        
+        def update(self, text):
+            self.image = self.font.render(text, True,self.kleur )
+        
+    begin_text = Text(text = "knijp om te beginnen")
+    eind_text = Text(text = 'knijp om opnieuw te beginnen')
+    text_group = [tut_text1 := Text(text = "knijp om te springen, probeer het parcour!", draw = True, y = screen_y/4), \
+    tut_text2 := Text(text = "Spring als de indicator op groen is", y = screen_y/4 -30), \
+    tut_text3 := Text(text = "Als je springt op rood verlies je een hartje", y = screen_y/4 +30),\
+    tut_text4 := Text(text = "op geel krijg je maar een half punt", y = screen_y/4 +90), \
+    tut_text5 := Text(text = "bij elk succesvol parcour wordt het langer", y = screen_y/4 -30),\
+    tut_text6 := Text(text = "en aan het begin en einde wordt het sneller", y = screen_y/4 + 30), \
+    tut_text7 := Text(text = "probeer het nu zelf", y = screen_y/4) \
+        ]
+
+    
+    
     #maakt player, player groep, eerste tegel en tegel groep
-    begintegel = Tegel(screen_x/2,0,True,"enkelvoudig1")
+    begintegel = Tegel(screen_x/2,0,True,"enkelvoudig1", eerste_tegel = True)
     tegel_group = pygame.sprite.Group()
     tegel_group.add(begintegel)
     player = Player()
@@ -1360,52 +1568,189 @@ def hinkel_spel():
 
     draw_group = [score_text,score_balk_red,score_balk_yellow,score_balk_green,score_indicator,player]
     while True:
-        if len(pygame.sprite.spritecollide(player,tegel_group,False)) != 0 and len(tegel_group.sprites()) >= 6:
-       #     print(tegel_group.sprites().index(pygame.sprite.spritecollide(player,tegel_group,False)[0]))
-            #print(momentele_tegel().tegel_type)
-            pass
+        screen.fill((100,100,100))
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
-
             if event.type == pygame.KEYDOWN:
-                if event.key == K_ESCAPE:
+                if event.key == pygame.K_ESCAPE:
                     pygame.quit()
-                    print("Program aborted")
                     exit()
 
-            if event.type == COM_EVENT:
-                #score_text.secret_button()
-                player.springen()
+            elif event.type == COM_EVENT:
                 if event.message.strip() == "home_button_pressed":
-                        spring_running = False
                         return
+                if game_state == "playing":
+                    if player_bij_start == True:
+                        tegel_move = True
+                        player_bij_start = False
+                        eerste_sprong = True
+                    score_text.secret_button()
+                    player.springen()
+                elif game_state == "starting_screen":
+                    game_state = "playing"
+                elif game_state == "end_screen":
+                    score = 0
+                    game_state = "playing"
+                elif game_state == "tutorial":
+                    if player_bij_start == True:
+                        tegel_move = True
+                        player_bij_start = False
+                        eerste_sprong = True
+                    score_text.secret_button()
+                    player.springen()
 
-        player.vallen()
-            
-            
-        if player_op_tegel == False: #aan het begin van de game komen de tegels naar beneden tot de player
-            for tegel in tegel_group:
-                tegel.move(begin_tegelsnelheid)
+
+        if game_state == "starting_screen":
+
+            begin_text.blit()
+
+        elif game_state == "playing":
+            player.vallen()
+            if reverse and len(pygame.sprite.spritecollide(player,tegel_group,False)) == 0:
+                reverse = False
+                #tegel_move = False
+                #soort_beweging = "geen"
+            print(score_indicator_speed)
+
+            if len(pygame.sprite.spritecollide(player,tegel_group,False)) != 0 and len(tegel_group.sprites()) >= 6:
+           #     print(tegel_group.sprites().index(pygame.sprite.spritecollide(player,tegel_group,False)[0]))
+                #print(momentele_tegel().tegel_type)
+                pass
+            if player_op_tegel == False:
+                if tegel_move_aftegel: #aan het begin van de game komen de tegels naar beneden tot de player
+                    for tegel in tegel_group:
+                        tegel.move(begin_tegelsnelheid)
                 if corrigeer_eerste_tegel == True:
-                    if tegel.rect.centery > player.rect.centery: #tegels stoppen wanneer ze bij player komen
-                        player_op_tegel = True
-                        player.kan_jumpen = True
-                        afwijkingtegelplayer_corrigeren(tegel, player)
-                        corrigeer_eerste_tegel = False
-        elif pygame.sprite.spritecollide(player,tegel_group,False) == []:#player is niet meer op tegel als er geen collisions zijn
-            player_op_tegel = False
-        
+                    for tegel in tegel_group:
+                        if tegel.rect.centery > player.rect.centery:#tegels stoppen wanneer ze bij player komen
+                            player_op_tegel = True
+                            player.kan_jumpen = True
+                            afwijkingtegelplayer_corrigeren(tegel, player)
+                            corrigeer_eerste_tegel = False
+                            tegel_move_aftegel = False
+            elif pygame.sprite.spritecollide(player,tegel_group,False) == []:#player is niet meer op tegel als er geen collisions zijn, dan is player bij het begin
+                player_op_tegel = False
+                player.kan_jumpen = True
+                player_bij_start = True
+                corrigeer_eerste_tegel = True
+                parcour_lengte += parcour_vermeerdering
+                zet_tegel = True
+                for tegel in tegel_group:
+                    if tegel.laatste_tegel == True:
+                        
+                        tegel.laatste_tegel = False
+                score_vermeerderd = False
+                laatste_tegel_versnelling = False
 
 
-        nieuwe_tegel_als_allen_dood_zijn()#gaat alleen iets doen als er een limiet op aantal tegels staat
-        score_indicator.move()
+            nieuwe_tegel_als_allen_dood_zijn()#gaat alleen iets doen als er een limiet op aantal tegels staat
+            score_indicator.move()
 
-        screen.fill((100, 100, 100))
-        tegel_group.draw(screen)
-        for object in draw_group:
-            draw_object(screen,object)
+            tegel_group.draw(screen)
+            for object in draw_group:
+                draw_object(screen,object)
+
+            for heart in heart_group:
+                heart.draw()
+
+            pygame.display.flip()
+
+        elif game_state == "end_screen":
+            draw_object(screen,score_text)
+            eind_text.blit()
+
+        elif game_state == "tutorial":
+            player.vallen()
+            if reverse and len(pygame.sprite.spritecollide(player,tegel_group,False)) == 0:
+                reverse = False
+                #tegel_move = False
+                #soort_beweging = "geen"
+            print(score_indicator_speed)
+
+            if len(pygame.sprite.spritecollide(player,tegel_group,False)) != 0 and len(tegel_group.sprites()) >= 6:
+           #     print(tegel_group.sprites().index(pygame.sprite.spritecollide(player,tegel_group,False)[0]))
+                #print(momentele_tegel().tegel_type)
+                pass
+            if player_op_tegel == False:
+                if tegel_move_aftegel: #aan het begin van de game komen de tegels naar beneden tot de player
+                    for tegel in tegel_group:
+                        tegel.move(begin_tegelsnelheid)
+                if corrigeer_eerste_tegel == True:
+                    for tegel in tegel_group:
+                        if tegel.rect.centery > player.rect.centery:#tegels stoppen wanneer ze bij player komen
+                            player_op_tegel = True
+                            player.kan_jumpen = True
+                            afwijkingtegelplayer_corrigeren(tegel, player)
+                            corrigeer_eerste_tegel = False
+                            tegel_move_aftegel = False
+            elif pygame.sprite.spritecollide(player,tegel_group,False) == []:#player is niet meer op tegel als er geen collisions zijn, dan is player bij het begin
+                player_op_tegel = False
+                player.kan_jumpen = True
+                player_bij_start = True
+                corrigeer_eerste_tegel = True
+                parcour_lengte += parcour_vermeerdering
+                if parcour_vermeerdering > 0:
+                    zet_tegel = True
+                    for tegel in tegel_group:
+                        if tegel.laatste_tegel == True:
+                            
+                            tegel.laatste_tegel = False
+                score_vermeerderd = False
+                laatste_tegel_versnelling = False
+
+
+            nieuwe_tegel_als_allen_dood_zijn()#gaat alleen iets doen als er een limiet op aantal tegels staat
+            if move_score == True:
+                score_indicator.move()
+
+            tegel_group.draw(screen)
+            for object in draw_group:
+                draw_object(screen,object)
+
+            for heart in heart_group:
+                heart.draw()
+
+            for text in text_group:
+                if text.draw == True:
+                    text.blit()
+
+            if player_bij_start:
+                if aantal_keren_bij_start == 0:
+                    tut_text1.draw = False
+                    tut_text2.draw = True
+                    tut_text3.draw = True
+                    tut_text4.draw = True
+                    move_score = True
+                    aantal_keren_bij_start = 1
+                elif aantal_keren_bij_start == 1 and forceer_1_actie_var:
+                    parcour_vermeerdering = 1
+                    aantal_keren_bij_start = 2
+                    forceer_1_actie_var = False
+                elif aantal_keren_bij_start == 2 and forceer_1_actie_var:
+                    tut_text2.draw = False
+                    tut_text3.draw = False
+                    tut_text4.draw = False  
+                    tut_text5.draw = True
+                    tut_text6.draw = True
+                    forceer_1_actie_var = False
+                    aantal_keren_bij_start = 3
+                elif aantal_keren_bij_start == 3 and forceer_1_actie_var:
+                    tut_text5.draw = False
+                    tut_text6.draw = False
+                    tut_text7.draw = True
+                    forceer_1_actie_var = False
+                    aantal_keren_bij_start = 4
+                elif aantal_keren_bij_start == 4 and forceer_1_actie_var:
+                    tut_text7.draw = False
+                    forceer_1_actie_var = False
+            else: forceer_1_actie_var = True
+
+
+            pygame.display.flip()        
+
 
         clock.tick(60)
         pygame.display.update()
@@ -1456,14 +1801,15 @@ def ski_tutorial():
 
         for event in pygame.event.get():
             
-            
+            if event.type == pygame.QUIT:
+                exit_main_code()
+
             if event.type == pygame.KEYDOWN:
                 if event.key == K_ESCAPE:
                     pygame.quit()
                     print("Program aborted")
                     exit()
-            if event.type == pygame.QUIT:
-                exit_main_code()
+            
             
             elif event.type == COM_EVENT:
                 if event.message.strip() == "home_button_pressed":
@@ -1787,15 +2133,18 @@ while True:
                     selected_sound.play()
                     pygame.mixer.music.set_volume(1.0)
                     if tut_option == 'spring':
+                        pygame.mixer.music.set_volume(0.3)
                         springtouw("tutorial")
                         back_to_menu_fnct()
 
                     elif tut_option == 'ski':
+                        pygame.mixer.music.set_volume(0.3)
                         ski_tutorial()
-                        back_to_menu = True
+                        back_to_menu_fnct()
                     elif tut_option == 'hinkel':
-                        hinkel_tutorial()
-                        back_to_menu = True
+                        pygame.mixer.music.set_volume(0.3)
+                        hinkel_spel("tutorial")
+                        back_to_menu_fnct()
             
             else:
                 back_to_menu = False
@@ -1850,7 +2199,7 @@ while True:
 
 
     if game_ready == 'ready':
-        pygame.mixer.music.set_volume(0.15)
+        pygame.mixer.music.set_volume(0.3)
         #time.sleep(0.7)
         # Handle game screen logic when ready
         screen.fill('pink')
