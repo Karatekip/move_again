@@ -29,8 +29,7 @@ jump_sound = pygame.mixer.Sound('music/jump.mp3')
 game_over_sound = pygame.mixer.Sound('music/game_over.mp3')
 game_start_sound = pygame.mixer.Sound('music/game_start.mp3')
 select_sound = pygame.mixer.Sound('music/select.mp3')
-
-
+selected_sound = pygame.mixer.Sound('music/selected.mp3')
 
 screen = pygame.display.set_mode((1200, 700))  # size screen
 #screen = pygame.display.set_mode((0, 0),pygame.FULLSCREEN)  # size screen
@@ -68,7 +67,7 @@ starttrans_rect = starttrans_surf.get_rect(center=(600, 350))
  
 
 # text
-spring_touw_t_surf = font_1.render('spring touw', False, (251, 72, 196))
+spring_touw_t_surf = font_1.render('Spring Touw', False, (251, 72, 196))
 spring_touw_t_surf = pygame.transform.scale(spring_touw_t_surf, (250, 70))
 spring_touw_t_rect = spring_touw_t_surf.get_rect(center=(250, 350))
  
@@ -76,7 +75,7 @@ ski_t_surf = font_1.render('Ski', False, (251, 72, 196))
 ski_t_surf = pygame.transform.scale(ski_t_surf, (130, 70))
 ski_t_rect = ski_t_surf.get_rect(center=(600, 350))
  
-hinkel_t_surf = font_1.render('hinkel', False, (251, 72, 196))
+hinkel_t_surf = font_1.render('Hinkel', False, (251, 72, 196))
 hinkel_t_surf = pygame.transform.scale(hinkel_t_surf, (250, 70))
 hinkel_t_rect = hinkel_t_surf.get_rect(center=(900, 350))
  
@@ -761,7 +760,10 @@ def ski_game():
     pygame.display.set_caption('Runner')
     clock = pygame.time.Clock()
     font = pygame.font.SysFont(None, 24)
-    
+    pygame.mixer.music.fadeout(2000)
+    pygame.mixer.music.load("music/xmas_music.mp3")
+    pygame.mixer.music.play(-1)
+    pygame.mixer.music.set_volume(0.5)
     class Sphere:
         def __init__(self):
             self.x = 300
@@ -887,7 +889,7 @@ def ski_game():
                 self.sn_pl_x = randint(-1000, -400)
                 self.sn_pl_y = randint(60, 220)
             self.sn_pl_rect = self.sn_pl_surf.get_rect(bottomleft=(self.sn_pl_x, self.sn_pl_y))
-            
+
             #snoopy and snowman
             self.sn_sn_x -= 5
             if (self.sn_sn_x + self.sn_sn_width) < 0:
@@ -963,14 +965,18 @@ def ski_game():
             elif event.type == COM_EVENT:
                 if event.message.strip() == "left_button_pressed":
                     if not sphere.is_jumping:
-                        sphere.is_jumping = True 
+                        sphere.is_jumping = True
                         space_pressed = True
+                        jump_sound.play()
                     sphere.is_space_held = True
                     
                 elif event.message.strip() == "left_button_released":
                     sphere.is_space_held = False
 
                 if event.message.strip() == "home_button_pressed":
+                        pygame.mixer.music.fadeout(1000)
+                        pygame.mixer.music.load("music/Les-feuilles-mortes.ogg")
+                        pygame.mixer.music.play(-1)
                         spring_running = False
                         return
 
@@ -1035,6 +1041,7 @@ def ski_game():
                             print("GAME OVER")
                             print(f"Final Score: {score}")
                             game_state = 'over'
+                            game_over_sound.play()
                         else:
                             print("The sphere has landed after jumping on flat ground!")
                     space_pressed = False
@@ -1704,63 +1711,80 @@ while True:
 
             if event.message.strip() == "right_button_released":
                 right_pressed = False
-            
-                
-            
-            
-            
-                
-                
+
+
+
+
+
             if left_pressed == False and right_pressed == False:
                 if old_left_press == True and old_right_press == False:
                     if game_status == 'tutorial_menu_selected':
                         if tut_option == 'spring':
                             tut_option = 'hinkel'
+                            select_sound.play()
                         elif tut_option == 'hinkel':
                             tut_option = 'ski'
+                            select_sound.play()
                         elif tut_option == 'ski':
                             tut_option = 'spring'
-                        
+                            select_sound.play()
+
+
+
                     else:
                         if mouse_x == 900:
                             mouse_x = 600
                             mouse_y = 350
+                            select_sound.play()
                         elif mouse_x == 600:
                             mouse_x = 260
                             mouse_y = 350
+                            select_sound.play()
                         elif mouse_x == 260:
                             mouse_x = 1180
                             mouse_y = 11
+                            select_sound.play()
                         elif mouse_x == 1180:
                             mouse_x = 900
                             mouse_y = 350
+                            select_sound.play()
 
                 if old_left_press == False and old_right_press == True:
                     if game_status == 'tutorial_menu_selected':
                         if tut_option == 'spring':
                             tut_option = 'ski'
+                            select_sound.play()
                         elif tut_option == 'ski':
                             tut_option = 'hinkel'
+                            select_sound.play()
                         elif tut_option == 'hinkel':
                             tut_option = 'spring'
-                            
+                            select_sound.play()
+
                     else:
                         if mouse_x == 900:
                             mouse_x = 1180
                             mouse_y = 11
+                            select_sound.play()
                         elif mouse_x == 1180:
                             mouse_x = 260
                             mouse_y = 350
+                            select_sound.play()
                         elif mouse_x == 260:
                             mouse_x = 600
                             mouse_y = 350
+                            select_sound.play()
                         elif mouse_x == 600:
                             mouse_x = 900
                             mouse_y = 350
+                            select_sound.play()
 
 
             if game_status == 'tutorial_menu_selected':
+                if event.message.strip() == "home_button_pressed":
+                    back_to_menu_fnct()
                 if left_pressed == True and right_pressed == True:
+                    selected_sound.play()
                     pygame.mixer.music.set_volume(1.0)
                     if tut_option == 'spring':
                         springtouw("tutorial")
@@ -1776,6 +1800,7 @@ while True:
             else:
                 back_to_menu = False
                 if left_pressed == True and right_pressed == True:
+                    selected_sound.play()
                     mouse_x, mouse_y = 600, 600
 
 
@@ -1825,7 +1850,7 @@ while True:
 
 
     if game_ready == 'ready':
-        pygame.mixer.music.set_volume(0.3)
+        pygame.mixer.music.set_volume(0.15)
         #time.sleep(0.7)
         # Handle game screen logic when ready
         screen.fill('pink')
