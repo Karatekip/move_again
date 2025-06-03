@@ -293,17 +293,17 @@ def springtouw(game_state):
         if difficulty ==1:
             snelheid_touw = 0.02
             tolerantie =  1
-            groen_hoogte = 350
+            groen_hoogte = relativeer(350)
         
         elif difficulty ==2:
             snelheid_touw = 0.03
             tolerantie = 2
-            groen_hoogte = 315
+            groen_hoogte = relativeer(315)
 
         elif difficulty ==3:
             snelheid_touw = 0.08
             tolerantie = 3
-            groen_hoogte = 280
+            groen_hoogte = relativeer(280)
        
     def restart_game():
         global startup, x, springtouw_draairichting,  springtouw_achter, player
