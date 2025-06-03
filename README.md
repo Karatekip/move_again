@@ -3,3 +3,10 @@ wat loopt op rasp:
 - graphics
 - music
 - font
+
+wat loopt op esp32 receiver:
+- receiver.py
+
+wat loopt op esp32 sender:
+- right_sender.py
+- left_sender.py
